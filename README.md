@@ -1,4 +1,4 @@
-# Hospital Readmission Prediction using Machine Learning
+# Repositorio del TFM del master de Inteligencia artificial de la universidad UTAMED 2025/2026
 # Predicción de Reingresos Hospitalarios mediante Machine Learning
 ---
 
