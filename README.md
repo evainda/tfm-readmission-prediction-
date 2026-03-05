@@ -2,7 +2,7 @@
 # Predicción de Reingresos Hospitalarios mediante Machine Learning
 ---
 
-# 🇪🇸 Versión en Español
+# Versión en Español
 
 ## Descripción
 
@@ -17,7 +17,7 @@ El proyecto utilizará datos clínicos procedentes de registros electrónicos de
 
 **MIMIC-IV Clinical Database**
 
-# 🇬🇧 English Version
+# English Version
 
 ## Overview
 
