@@ -13,7 +13,7 @@ El objetivo del proyecto es desarrollar modelos predictivos capaces de estimar l
 
 ## Dataset
 
-El proyecto utilizará datos clínicos procedentes de registros electrónicos de salud. El dataset principal considerado para este trabajo es:
+ El dataset principal considerado para este trabajo es:
 
 **MIMIC-IV**
 
@@ -29,7 +29,7 @@ The goal of the project is to develop predictive models capable of estimating th
 
 ## Dataset
 
-The project will use clinical datasets derived from Electronic Health Records (EHR). The primary dataset considered for this research is:
+The primary dataset considered for this research is:
 
 **MIMIC-IV**
 
