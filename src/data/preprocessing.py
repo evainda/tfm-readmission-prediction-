@@ -62,7 +62,7 @@ def clean_patients(df):
 def merge_datasets(patients, admissions):
     """
     Unión de los datasets principales. 
-    A PRIORI solo se integran las tablas de pacientes y admisiones.
+    A PRIORI solo se integran las tablas de pacientes y admisiones.TODO
 
     En este caso se combinan:
     - la tabla de pacientes (patients)
@@ -102,7 +102,7 @@ def save_processed(df):
     Guarda el dataset final en la carpeta 'processed'.
 
     Esta versión del dataset es la que se utilizará posteriormente
-    para el entrenamiento de modelos de machine learning.
+    para el entrenamiento de modelos.
     """
 
     path = DATA_PROCESSED / "model_dataset.csv"
@@ -112,18 +112,11 @@ def save_processed(df):
 
 def run_preprocessing():
     """
-    Pipeline completo de preprocesamiento de datos.
+    Primera etapa del pipeline de preprocesamiento.
 
-    Esta función ejecuta de forma automática todas las etapas del
-    proceso de preparación de datos:
+    En esta fase se realiza la limpieza básica de los datasets
+    y su integración en un único dataframe.
 
-    1. Carga de datasets
-    2. Limpieza de datos
-    3. Integración de tablas
-    4. Guardado de datasets intermedios y finales
-
-    Este enfoque permite automatizar el pipeline de datos y facilita
-    la reproducibilidad del proyecto.
     """
 
     print("Loading datasets...")
@@ -136,7 +129,7 @@ def run_preprocessing():
     datasets = load_multiple_datasets({
         "patients": FILES["patients"],
         "admissions": FILES["admissions"],
-        "diagnoses": FILES["diagnoses"]
+        "diagnoses": FILES["diagnoses"] #esta de momento no se está utilizandoTODO 
     })
 
     # Extraemos los datasets del diccionario
@@ -167,7 +160,6 @@ def generate_model_dataset(df):
     """
     Segunda etapa del pipeline.
 
-    Prepara el dataset:
     - eliminación de variables irrelevantes
     - tratamiento de valores faltantes
     - codificación de variables categóricas
