@@ -8,7 +8,7 @@ Notebook:
 Notebook:
 [Open in Colab](https://colab.research.google.com/github/evainda/tfm-readmission-prediction-/blob/main/notebooks/02_preprocessing.ipynb)
 
-## Modeling
+## MODELADO
 
 Notebook:
 [Open in Colab](https://colab.research.google.com/github/evainda/tfm-readmission-prediction-/blob/main/notebooks/03_models.ipynb)
@@ -17,6 +17,5 @@ Notebook:
 ## EVALUACIÓN
 
 Notebook:
-
 [Open in Colab](https://colab.research.google.com/github/evainda/tfm-readmission-prediction-/blob/main/notebooks/04_evaluation.ipynb)
 
