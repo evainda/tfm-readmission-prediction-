@@ -11,12 +11,12 @@ Notebook:
 ## Modeling
 
 Notebook:
-[Open in Colab](https://colab.research.google.com/github/evainda/tfm-readmission-prediction-/blob/main/notebooks/03_feature_engineering.ipynb)
+[Open in Colab](https://colab.research.google.com/github/evainda/tfm-readmission-prediction-/blob/main/notebooks/03_models.ipynb)
 
 
 ## Evaluation
 
 Notebook:
 
-[Open in Colab](https://colab.research.google.com/github/evainda/tfm-readmission-prediction-/blob/main/notebooks/04_modeling.ipynb)
+[Open in Colab](https://colab.research.google.com/github/evainda/tfm-readmission-prediction-/blob/main/notebooks/04_evaluation.ipynb)
 
