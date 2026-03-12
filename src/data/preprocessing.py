@@ -168,6 +168,8 @@ def generate_model_dataset(df):
     """
 
     print("Preparing dataset for modeling...")
+    print("Creating readmission target variable...")
+    df = create_readmission_target(df)
     print("Columns before processing:", len(df.columns))
     # eliminar columnas irrelevantes
     df = df.drop(columns=[
@@ -180,7 +182,9 @@ def generate_model_dataset(df):
         "anchor_year_group",
         "admit_provider_id",
         "subject_id",
-        "hadm_id"
+        "hadm_id",
+        "hospital_expire_flag",
+        "anchor_year"
     ], errors="ignore")
 
     # imputación de variables categóricas
@@ -198,8 +202,7 @@ def generate_model_dataset(df):
         "marital_status",
         "language",
         "admission_type",
-        "admission_location",
-        "discharge_location"
+        "admission_location"
     ]
 
     df = pd.get_dummies(df, columns=categorical_cols)
@@ -212,3 +215,63 @@ def generate_model_dataset(df):
     print("Model dataset created.")
 
     return df
+
+#La variable objetivo del modelo corresponde a la readmisión hospitalaria dentro de
+#  los 30 días posteriores al alta. Para su construcción se ordenaron cronológicamente las admisiones de cada
+#  paciente y se calculó el intervalo temporal entre el alta hospitalaria y el siguiente ingreso. Cuando este intervalo
+#  fue inferior o igual a 30 días se consideró que se había producido una readmisión.
+
+def create_readmission_target(df):
+    """
+    Crea la variable objetivo readmission_30_days.
+
+    La variable indica si un paciente vuelve a ingresar
+    en el hospital dentro de los 30 días posteriores al alta.
+    """
+
+    df = df.copy()
+    
+    # ordenar admisiones por paciente y fecha
+    df = df.sort_values(["subject_id", "admittime"])
+
+    
+    #NUEVA VARIABLE
+    # número de ingresos previos
+    # Se incorporó una variable adicional que representa el número de ingresos hospitalarios previos 
+    # del paciente. Esta variable captura la frecuencia de hospitalización previa y se ha identificado 
+    #  como un factor relevante para la predicción de readmisiones.
+    df["previous_admissions"] = df.groupby("subject_id").cumcount()
+    
+    #NUEVA VARIABLE QUE SIRVE PARA ELIMINAR
+    # obtener la siguiente admisión del mismo paciente
+    df["next_admittime"] = df.groupby("subject_id")["admittime"].shift(-1)
+
+    # calcular días hasta la siguiente admisión
+    df["days_to_next_admission"] = (
+        df["next_admittime"] - df["dischtime"]
+    ).dt.days
+
+    #NUEVA VARIABLE
+    # crear variable objetivo
+    df["readmission_30_days"] = (
+        df["days_to_next_admission"] <= 30
+    ).astype(int)
+
+    # eliminar últimas admisiones (no sabemos si hubo readmisión)
+    #las últimas admisiones de cada paciente no deberían usarse para entrenamiento, porque no sabemos si hubo readmisión después. -> sesgo
+    df = df[df["next_admittime"].notna()]
+
+    # eliminar columnas auxiliares
+    df = df.drop(columns=[
+        "next_admittime",
+        "days_to_next_admission"
+    ])
+
+    return df
+
+
+
+
+
+    
+    
