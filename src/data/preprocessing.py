@@ -110,7 +110,7 @@ def save_processed(df):
     df.to_csv(path, index=False)
 
 
-def run_preprocessing():
+def run_preprocessing_part1():
     """
     Primera etapa del pipeline de preprocesamiento.
 
@@ -156,7 +156,7 @@ def run_preprocessing():
 
     return df
 
-def generate_model_dataset(df):
+def run_preprocessing_part2(df):
     """
     Segunda etapa del pipeline.
 
