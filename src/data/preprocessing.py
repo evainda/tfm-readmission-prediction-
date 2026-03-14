@@ -160,6 +160,7 @@ def run_preprocessing_part2(df):
     """
     Segunda etapa del pipeline.
 
+    - creación de la variable objetivo readmission_30_days
     - eliminación de variables irrelevantes
     - tratamiento de valores faltantes
     - codificación de variables categóricas
@@ -187,25 +188,32 @@ def run_preprocessing_part2(df):
         "anchor_year"
     ], errors="ignore")
 
-    # imputación de variables categóricas
+    # imputación de variables categóricas con valor "Unknown"
+    #se imputan aquellas que presentas una cantidad significativa de valores faltantes.
+
     df["insurance"] = df["insurance"].fillna("Unknown")
     df["marital_status"] = df["marital_status"].fillna("Unknown")
     df["language"] = df["language"].fillna("Unknown")
     df["discharge_location"] = df["discharge_location"].fillna("Unknown")
     df["admission_location"] = df["admission_location"].fillna("Unknown")
+    df["admission_type"] = df["admission_type"].fillna("Unknown")
+    
+    #en el caso de gender y race no existen valores faltantes, 
+    # por lo que no se realiza imputación.
 
     # variables categóricas para encoding
     categorical_cols = [
-        "gender",
+        "gender", 
         "race",
         "insurance",
         "marital_status",
         "language",
         "admission_type",
-        "admission_location"
+        "admission_location",
+        "discharge_location"
     ]
 
-    df = pd.get_dummies(df, columns=categorical_cols)
+    df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
     
     print("Columns after encoding:", len(df.columns))
     print("Saving processed dataset...")
