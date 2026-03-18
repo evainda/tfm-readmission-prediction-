@@ -9,7 +9,7 @@ DATA_INTERIM = PROJECT_ROOT / "data" / "interim"
 DATA_PROCESSED = PROJECT_ROOT / "data" / "processed"
 
 # Target variable
-TARGET_VARIABLE = "readmission"
+TARGET_VARIABLE = "readmission_30_days"
 
 # Model parameters
 TEST_SIZE = 0.2
