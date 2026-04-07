@@ -58,4 +58,8 @@ Thumbs.db
 models/*.pkl
 
 # =========================
-.claude/settings.local.json
+# RESULTS
+# =========================
+
+results/*.csv
+results/*.png
