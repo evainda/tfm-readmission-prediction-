@@ -123,6 +123,7 @@ def group_rare_categories(df, col, threshold=0.01):
     threshold : float — proporción mínima para conservar una categoría (default 0.01)
     """
 
+    df = df.copy()
     min_count = threshold * len(df)
     counts = df[col].value_counts()
     rare_categories = counts[counts < min_count].index
@@ -151,9 +152,14 @@ def create_readmission_target(df):
     df["next_admittime"] = df.groupby("subject_id")["admittime"].shift(-1)
 
     # Calcular días entre el alta y el siguiente ingreso.
+    # .dt.days devuelve la parte entera del Timedelta: si el intervalo es
+    # 6 horas, days == 0 y se contabiliza como reingreso el mismo día.
     # Se usa >= 0 para excluir admisiones solapadas en MIMIC (donde next_admittime
     # puede ser anterior a dischtime), que de otro modo quedarían etiquetadas
     # incorrectamente como readmisión al satisfacer la condición <= 30.
+    # Decisión de diseño: se incluyen reingresos con days == 0 (mismo día del alta)
+    # porque en MIMIC representan reingresos reales inmediatos, no solapamientos
+    # (estos últimos quedan excluidos por el filtro >= 0 sobre el valor negativo).
     df["days_to_next_admission"] = (
         df["next_admittime"] - df["dischtime"]
     ).dt.days
@@ -181,6 +187,7 @@ def save_interim(df):
     """
 
     path = DATA_INTERIM / "cleaned_dataset.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
 
 
@@ -193,6 +200,7 @@ def save_processed(df):
     """
 
     path = DATA_PROCESSED / "model_dataset.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
 
 

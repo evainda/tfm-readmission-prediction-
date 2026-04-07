@@ -1,0 +1,19 @@
+# TFM — Predicción de Reingreso Hospitalario (MIMIC-IV)
+# Instalación: pip install -r requirements.txt
+
+# Datos y computación
+pandas==3.0.1
+numpy==2.4.3
+
+# Visualización
+matplotlib==3.10.8
+seaborn==0.13.2
+
+# Machine Learning
+scikit-learn==1.8.0
+xgboost==3.2.0
+lightgbm==4.6.0
+joblib==1.5.3
+
+# Interpretabilidad
+shap==0.46.0
