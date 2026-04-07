@@ -20,11 +20,7 @@ from src.data.load import load_csv
 
 
 def load_data():
-    """
-    Carga el dataset final generado por el pipeline de preprocesamiento.
-
-    Devuelve X (variables predictoras) e y (variable objetivo).
-    """
+    """Carga el dataset procesado y devuelve X e y."""
 
     path = DATA_PROCESSED / "model_dataset.csv"
     df = load_csv(path)
@@ -45,10 +41,10 @@ def load_data():
 
 def split_data(X, y):
     """
-    División estratificada en entrenamiento y test.
+    División estratificada en entrenamiento (80%) y test (20%).
 
-    Usa TEST_SIZE y RANDOM_STATE definidos en config.py para garantizar
-    reproducibilidad y mantener la proporción de clases en ambos subconjuntos.
+    La estratificación garantiza que la proporción de reingresos sea
+    la misma en ambos subconjuntos.
     """
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -63,21 +59,10 @@ def split_data(X, y):
 
 def get_models(scale_pos_weight=1.0):
     """
-    Devuelve el diccionario de modelos a entrenar.
+    Devuelve los cuatro modelos a comparar con sus configuraciones base.
 
-    - Logistic Regression: baseline lineal interpretable.
-    - Random Forest: ensemble de árboles, captura relaciones no lineales.
-    - XGBoost: gradient boosting, robusto con datos tabulares.
-    - LightGBM: gradient boosting optimizado en velocidad y memoria.
-
-    Todos los modelos usan class_weight='balanced' (o scale_pos_weight en XGBoost)
-    para compensar el desbalanceo de clases y mejorar el recall sobre la clase
-    positiva (readmisión), que es la clase de interés clínico.
-
-    Parámetros
-    ----------
-    scale_pos_weight : float — ratio negatives/positives para XGBoost.
-        Calculado en run_all_models() a partir de y_train.
+    Todos usan class_weight='balanced' (o scale_pos_weight en XGBoost)
+    para compensar el desbalanceo 65/35 y mejorar el recall sobre reingresos.
     """
 
     models = {
@@ -126,22 +111,11 @@ def get_models(scale_pos_weight=1.0):
 
 def get_metrics(y_true, y_pred, y_prob):
     """
-    Calcula las métricas de evaluación estándar para clasificación binaria.
+    Calcula las métricas principales para clasificación binaria.
 
-    En predicción de readmisión clínica el recall y el ROC-AUC son las
-    métricas más relevantes: el recall mide la capacidad de detectar
-    pacientes en riesgo real, y el ROC-AUC la capacidad discriminativa
-    global del modelo independientemente del umbral de decisión.
-
-    Average Precision (PR-AUC) complementa el ROC-AUC en problemas con
-    clases desbalanceadas, ya que se centra exclusivamente en la clase
-    positiva y no incluye los verdaderos negativos en su cálculo.
-
-    Parámetros
-    ----------
-    y_true : array-like — etiquetas reales
-    y_pred : array-like — predicciones binarizadas (umbral 0.5)
-    y_prob : array-like — probabilidades de la clase positiva
+    ROC-AUC y Recall son las métricas clave en este contexto clínico:
+    el primero mide la capacidad discriminativa global y el segundo
+    cuántos pacientes en riesgo real se detectan.
     """
 
     return {
@@ -155,19 +129,7 @@ def get_metrics(y_true, y_pred, y_prob):
 
 
 def train_evaluate(name, model, X_train, X_test, y_train, y_test):
-    """
-    Entrena un modelo y devuelve sus métricas sobre el conjunto de test.
-
-    Parámetros
-    ----------
-    name    : str — nombre del modelo (para el log)
-    model   : estimador sklearn-compatible
-    X_train, X_test, y_train, y_test : splits de datos
-
-    Devuelve
-    --------
-    dict con el nombre del modelo, todas las métricas y el tiempo de entrenamiento.
-    """
+    """Entrena un modelo y devuelve sus métricas sobre el conjunto de test."""
 
     print(f"  Training {name}...")
     start = time.perf_counter()
@@ -186,17 +148,10 @@ def train_evaluate(name, model, X_train, X_test, y_train, y_test):
 
 def run_all_models(X_train, X_test, y_train, y_test):
     """
-    Entrena todos los modelos definidos en get_models() y devuelve
-    una tabla comparativa ordenada por ROC-AUC descendente.
+    Entrena los cuatro modelos y devuelve una tabla comparativa ordenada por ROC-AUC.
 
-    Calcula scale_pos_weight a partir de y_train para pasar a XGBoost,
-    garantizando que el ajuste de clase se basa únicamente en datos de
-    entrenamiento y no introduce fuga de información del test set.
-
-    Devuelve
-    --------
-    results_df : pd.DataFrame con métricas de cada modelo
-    trained_models : dict con los modelos ya entrenados
+    El scale_pos_weight de XGBoost se calcula a partir de y_train para
+    no introducir información del test set en la configuración del modelo.
     """
 
     scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
@@ -223,27 +178,15 @@ def run_all_models(X_train, X_test, y_train, y_test):
 
 def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
     """
-    Optimización de hiperparámetros mediante RandomizedSearchCV.
+    Optimización de hiperparámetros del modelo seleccionado mediante
+    RandomizedSearchCV sobre el conjunto de entrenamiento.
 
-    Explora n_iter combinaciones aleatorias del espacio de hiperparámetros
-    usando validación cruzada estratificada interna (cv folds) sobre los
-    datos de entrenamiento. El scoring es ROC-AUC, consistente con la
-    métrica principal del proyecto.
+    Se exploran n_iter combinaciones aleatorias con validación cruzada
+    interna de cv folds. El scoring es ROC-AUC. El test set no participa
+    en ningún momento de la búsqueda.
 
-    Se aplica exclusivamente sobre X_train/y_train para evitar data leakage:
-    el test set no participa en ningún momento de la búsqueda.
-
-    Parámetros
-    ----------
-    model_name : str  — nombre del modelo a optimizar ('LightGBM' o 'XGBoost')
-    n_iter     : int  — combinaciones aleatorias a explorar (default 20)
-    cv         : int  — folds de CV interna (default 3, equilibrio velocidad/robustez)
-
-    Devuelve
-    --------
-    best_estimator : modelo reentrenado con los mejores hiperparámetros
-    best_params    : dict con los hiperparámetros óptimos
-    cv_results     : dict con media y std del ROC-AUC de CV
+    Devuelve el modelo reentrenado con los mejores hiperparámetros,
+    el diccionario de parámetros y el ROC-AUC medio de CV.
     """
 
     param_distributions = {
@@ -254,7 +197,7 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
             "num_leaves":         [31, 63, 127],
             "min_child_samples":  [20, 50, 100],
             "subsample":          [0.7, 0.8, 1.0],
-            "bagging_freq":       [1, 5, 10],   # requerido para que subsample tenga efecto en LightGBM
+            "bagging_freq":       [1, 5, 10],
             "colsample_bytree":   [0.7, 0.8, 1.0],
         },
         "XGBoost": {
@@ -274,8 +217,8 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
 
     scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
     base_model = get_models(scale_pos_weight=scale_pos_weight)[model_name]
-    # Evitar over-subscription: RandomizedSearchCV ya paraleliza a nivel de fold/combinación.
-    # Si el modelo interno también usa n_jobs=-1, se satura la CPU.
+    # Desactivar paralelismo interno para evitar saturación de CPU
+    # durante la búsqueda (RandomizedSearchCV ya paraleliza por fold)
     base_model.set_params(n_jobs=1)
 
     skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
@@ -297,8 +240,6 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
     print(f"\nMejores hiperparámetros: {search.best_params_}")
     print(f"ROC-AUC medio (CV interna): {search.best_score_:.4f}")
 
-    # Restaurar paralelismo completo en el modelo final (se desactivó para evitar
-    # over-subscription durante RandomizedSearchCV)
     search.best_estimator_.set_params(n_jobs=-1)
 
     return search.best_estimator_, search.best_params_, {
@@ -311,27 +252,11 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
 
 def cross_validate_model(model, X, y, cv=5):
     """
-    Validación cruzada estratificada (StratifiedKFold) con ROC-AUC.
+    Validación cruzada estratificada (5 folds) sobre los datos de entrenamiento.
 
     Proporciona una estimación más robusta del rendimiento que una
-    única partición train/test, al promediar sobre múltiples splits.
-
-    IMPORTANTE: debe llamarse con X_train e y_train, nunca con el dataset
-    completo, para evitar que las observaciones del test set participen
-    en la estimación de rendimiento (data leakage).
-
-    n_jobs=1 en cross_val_score evita over-subscription de CPU cuando los
-    modelos ya usan paralelismo interno (XGBoost, LightGBM, Random Forest).
-
-    Parámetros
-    ----------
-    model : estimador sklearn-compatible (ya instanciado)
-    X, y  : datos de entrenamiento (sin incluir test set)
-    cv    : número de folds (default 5)
-
-    Devuelve
-    --------
-    dict con media y desviación estándar del ROC-AUC
+    única partición. Debe llamarse siempre con X_train/y_train,
+    nunca con el dataset completo.
     """
 
     skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
