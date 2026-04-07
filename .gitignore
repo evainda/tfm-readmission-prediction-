@@ -63,9 +63,14 @@ models/*.pkl
 
 results/*.csv
 results/*.png
+results/*.svg
+results/*.pdf
 
 # =========================
 # DOCS
-
 # =========================
 docs/*.txt  
+
+# =========================
+# LOGS
+memory/*
