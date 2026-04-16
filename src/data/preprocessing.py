@@ -86,8 +86,7 @@ def add_diagnosis_features(df, diagnoses):
 
     Variables generadas:
     - n_diagnoses: número de diagnósticos registrados por hospitalización.
-      Es un indicador de la complejidad clínica del ingreso y está relacionado
-      con mayor riesgo de readmisión en la literatura.
+      A más diagnósticos, más complejo el ingreso y mayor tendencia a reingresar.
 
     La unión se realiza mediante 'hadm_id'. Los ingresos sin diagnósticos
     registrados reciben el valor 0.

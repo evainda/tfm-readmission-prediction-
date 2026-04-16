@@ -1,5 +1,6 @@
 import time
 
+import joblib
 import pandas as pd
 import numpy as np
 
@@ -15,8 +16,30 @@ from sklearn.metrics import (
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 
-from src.config import DATA_PROCESSED, TARGET_VARIABLE, TEST_SIZE, RANDOM_STATE
+from src.config import DATA_PROCESSED, TARGET_VARIABLE, TEST_SIZE, RANDOM_STATE, PROJECT_ROOT
 from src.data.load import load_csv
+
+MODELS_DIR = PROJECT_ROOT / "models"
+
+
+def save_model(model, name):
+    """Serializa el modelo entrenado en models/<name>.pkl."""
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    path = MODELS_DIR / f"{name}.pkl"
+    joblib.dump(model, path)
+    print(f"Modelo guardado en {path}")
+    return path
+
+
+def load_model(name):
+    """Carga un modelo serializado desde models/<name>.pkl."""
+    path = MODELS_DIR / f"{name}.pkl"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Modelo no encontrado: {path}\n"
+            "Ejecuta primero 03_models.ipynb para entrenar y guardar el modelo."
+        )
+    return joblib.load(path)
 
 
 def load_data():
@@ -25,10 +48,11 @@ def load_data():
     path = DATA_PROCESSED / "model_dataset.csv"
     df = load_csv(path)
 
-    assert TARGET_VARIABLE in df.columns, (
-        f"Variable objetivo '{TARGET_VARIABLE}' no encontrada en el dataset. "
-        "Verifica que el preprocesamiento se ha ejecutado correctamente."
-    )
+    if TARGET_VARIABLE not in df.columns:
+        raise ValueError(
+            f"Variable objetivo '{TARGET_VARIABLE}' no encontrada en el dataset. "
+            "Verifica que el preprocesamiento se ha ejecutado correctamente."
+        )
 
     X = df.drop(columns=[TARGET_VARIABLE])
     y = df[TARGET_VARIABLE]
@@ -114,8 +138,8 @@ def get_metrics(y_true, y_pred, y_prob):
     Calcula las métricas principales para clasificación binaria.
 
     ROC-AUC y Recall son las métricas clave en este contexto clínico:
-    el primero mide la capacidad discriminativa global y el segundo
-    cuántos pacientes en riesgo real se detectan.
+    el primero resume cómo de bien separa el modelo reingresos de no reingresos,
+    y el segundo cuántos pacientes en riesgo real se detectan.
     """
 
     return {
