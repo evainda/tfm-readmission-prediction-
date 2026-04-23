@@ -29,7 +29,7 @@ data/**/*.parquet
 data/**/*.pkl
 data/**/*.gz
 data/**/*.zip
-04_evaluation.ipynb
+
 # =========================
 # ENV
 # =========================
