@@ -65,20 +65,28 @@ def load_data():
 
 def split_data(X, y):
     """
-    División estratificada en entrenamiento (80%) y test (20%).
+    División estratificada en tres conjuntos: train (60%), validación (20%) y test (20%).
 
-    La estratificación garantiza que la proporción de reingresos sea
-    la misma en ambos subconjuntos.
+    La comparación de modelos y el tuning se realizan sobre validación.
+    El test set se usa una única vez para la evaluación final.
     """
 
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_trainval, X_test, y_trainval, y_test = train_test_split(
         X, y,
         test_size=TEST_SIZE,
         stratify=y,
         random_state=RANDOM_STATE
     )
 
-    return X_train, X_test, y_train, y_test
+    # 0.25 del 80% restante = 20% del total → split final 60/20/20
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_trainval, y_trainval,
+        test_size=0.25,
+        stratify=y_trainval,
+        random_state=RANDOM_STATE
+    )
+
+    return X_train, X_val, X_test, y_train, y_val, y_test
 
 
 def get_models(scale_pos_weight=1.0):
@@ -135,7 +143,8 @@ def get_models(scale_pos_weight=1.0):
 
 def get_metrics(y_true, y_pred, y_prob):
     """
-    Calcula las métricas principales para clasificación binaria.
+    Calcula las métric
+    as principales para clasificación binaria.
 
     ROC-AUC y Recall son las métricas clave en este contexto clínico:
     el primero resume cómo de bien separa el modelo reingresos de no reingresos,
