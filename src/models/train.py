@@ -161,25 +161,25 @@ def get_metrics(y_true, y_pred, y_prob):
     }
 
 
-def train_evaluate(name, model, X_train, X_test, y_train, y_test):
-    """Entrena un modelo y devuelve sus métricas sobre el conjunto de test."""
+def train_evaluate(name, model, X_train, X_val, y_train, y_val):
+    """Entrena un modelo y devuelve sus métricas sobre el conjunto de validación."""
 
     print(f"  Training {name}...")
     start = time.perf_counter()
     model.fit(X_train, y_train)
     train_time = time.perf_counter() - start
 
-    y_pred = model.predict(X_test)
-    y_prob = model.predict_proba(X_test)[:, 1]
+    y_pred = model.predict(X_val)
+    y_prob = model.predict_proba(X_val)[:, 1]
 
-    metrics = get_metrics(y_test, y_pred, y_prob)
+    metrics = get_metrics(y_val, y_pred, y_prob)
     metrics["Model"] = name
     metrics["Train time (s)"] = round(train_time, 1)
 
     return metrics
 
 
-def run_all_models(X_train, X_test, y_train, y_test):
+def run_all_models(X_train, X_val, y_train, y_val):
     """
     Entrena los cuatro modelos y devuelve una tabla comparativa ordenada por ROC-AUC.
 
@@ -195,7 +195,7 @@ def run_all_models(X_train, X_test, y_train, y_test):
 
     print("Training models...")
     for name, model in models.items():
-        metrics = train_evaluate(name, model, X_train, X_test, y_train, y_test)
+        metrics = train_evaluate(name, model, X_train, X_val, y_train, y_val)
         results.append(metrics)
         trained_models[name] = model
 
