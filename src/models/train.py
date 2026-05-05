@@ -4,7 +4,7 @@ import joblib
 import pandas as pd
 import numpy as np
 
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score, RandomizedSearchCV, GroupShuffleSplit
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
@@ -43,7 +43,13 @@ def load_model(name):
 
 
 def load_data():
-    """Carga el dataset procesado y devuelve X e y."""
+    """
+    Carga el dataset procesado y devuelve X, y y groups.
+
+    groups es la Serie subject_id para usar con GroupShuffleSplit (split por paciente).
+    Si el CSV no contiene subject_id (versión antigua), groups es None y el split
+    cae en la lógica estratificada aleatoria.
+    """
 
     path = DATA_PROCESSED / "model_dataset.csv"
     df = load_csv(path)
@@ -54,37 +60,57 @@ def load_data():
             "Verifica que el preprocesamiento se ha ejecutado correctamente."
         )
 
-    X = df.drop(columns=[TARGET_VARIABLE])
+    groups = df["subject_id"] if "subject_id" in df.columns else None
+    X = df.drop(columns=[TARGET_VARIABLE] + (["subject_id"] if "subject_id" in df.columns else []))
     y = df[TARGET_VARIABLE]
 
+    split_mode = "por paciente (GroupShuffleSplit)" if groups is not None else "aleatorio estratificado"
     print(f"Dataset cargado: {X.shape[0]:,} registros, {X.shape[1]} variables. "
-          f"Tasa positivos: {y.mean():.3f}")
+          f"Tasa positivos: {y.mean():.3f}. Split: {split_mode}")
 
-    return X, y
+    return X, y, groups
 
 
-def split_data(X, y):
+def split_data(X, y, groups=None):
     """
-    División estratificada en tres conjuntos: train (60%), validación (20%) y test (20%).
+    División en tres conjuntos: train (60%), validación (20%) y test (20%).
+
+    Si se proporcionan groups (subject_id), se usa GroupShuffleSplit para garantizar
+    que ningún paciente aparece en más de un conjunto (elimina el leakage por paciente).
+    Si groups es None, se aplica la división estratificada aleatoria como fallback.
 
     La comparación de modelos y el tuning se realizan sobre validación.
     El test set se usa una única vez para la evaluación final.
     """
 
-    X_trainval, X_test, y_trainval, y_test = train_test_split(
-        X, y,
-        test_size=TEST_SIZE,
-        stratify=y,
-        random_state=RANDOM_STATE
-    )
+    if groups is not None:
+        # Primera división: trainval / test — ningún paciente cruza la frontera
+        gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=RANDOM_STATE)
+        trainval_idx, test_idx = next(gss.split(X, y, groups=groups))
 
-    # 0.25 del 80% restante = 20% del total → split final 60/20/20
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_trainval, y_trainval,
-        test_size=0.25,
-        stratify=y_trainval,
-        random_state=RANDOM_STATE
-    )
+        X_trainval = X.iloc[trainval_idx]
+        X_test     = X.iloc[test_idx]
+        y_trainval = y.iloc[trainval_idx]
+        y_test     = y.iloc[test_idx]
+        groups_trainval = groups.iloc[trainval_idx]
+
+        # Segunda división: train / val — tampoco cruzan pacientes
+        gss2 = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=RANDOM_STATE)
+        train_idx, val_idx = next(gss2.split(X_trainval, y_trainval, groups=groups_trainval))
+
+        X_train = X_trainval.iloc[train_idx]
+        X_val   = X_trainval.iloc[val_idx]
+        y_train = y_trainval.iloc[train_idx]
+        y_val   = y_trainval.iloc[val_idx]
+
+    else:
+        X_trainval, X_test, y_trainval, y_test = train_test_split(
+            X, y, test_size=TEST_SIZE, stratify=y, random_state=RANDOM_STATE
+        )
+        # 0.25 del 80% restante = 20% del total → split final 60/20/20
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_trainval, y_trainval, test_size=0.25, stratify=y_trainval, random_state=RANDOM_STATE
+        )
 
     return X_train, X_val, X_test, y_train, y_val, y_test
 

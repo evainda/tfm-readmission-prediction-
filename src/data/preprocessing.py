@@ -304,6 +304,8 @@ def run_preprocessing_part2(df):
     # - identificadores únicos que no son features
     # - variables con riesgo de data leakage (deathtime, dod)
     # - anchor_age y anchor_year sustituidas por age_at_admission
+    # subject_id se conserva para poder hacer GroupShuffleSplit por paciente en train.py.
+    # No se incluirá como feature en X (load_data lo extrae y lo descarta de X).
     df = df.drop(columns=[
         "deathtime",
         "dod",
@@ -313,7 +315,6 @@ def run_preprocessing_part2(df):
         "dischtime",
         "anchor_year_group",
         "admit_provider_id",
-        "subject_id",
         "hadm_id",
         "hospital_expire_flag",
         "anchor_year",
