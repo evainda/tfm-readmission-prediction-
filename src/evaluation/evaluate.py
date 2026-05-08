@@ -20,6 +20,7 @@ def plot_roc_curve(model, X_test, y_test, model_name="Model", ax=None, save_path
     de un umbral concreto.
     """
 
+    # get probabilities for positive class
     y_prob = model.predict_proba(X_test)[:, 1]
     fpr, tpr, _ = roc_curve(y_test, y_prob)
     auc = roc_auc_score(y_test, y_prob)
@@ -317,6 +318,55 @@ def brier_score(model, X_test, y_test):
     return score
 
 
+def expected_calibration_error(model, X_test, y_test, n_bins=10):
+    """
+    Expected Calibration Error (ECE).
+
+    Divide las probabilidades predichas en n_bins intervalos y compara
+    la confianza media de cada bin con la fracción real de positivos.
+    ECE = suma ponderada de esas diferencias absolutas.
+
+    Cuanto más cercano a 0, mejor calibrado está el modelo.
+    Es más informativa que el Brier Score para detectar dónde falla
+    la calibración (bins de alta o baja probabilidad).
+    """
+    from sklearn.calibration import calibration_curve
+
+    y_prob = model.predict_proba(X_test)[:, 1]
+    y_arr  = np.asarray(y_test)
+
+    # Calculamos ECE manualmente para garantizar alineamiento exacto entre
+    # pesos, prob_true y prob_pred (calibration_curve omite bins vacíos y
+    # np.histogram siempre devuelve n_bins, por lo que combinarlos puede
+    # desalinear los arrays si los bins vacíos no coinciden exactamente).
+    bin_edges = np.linspace(0, 1, n_bins + 1)
+    bin_ids   = np.digitize(y_prob, bin_edges[1:-1])  # 0-indexed bin per sample
+
+    weights, prob_true, prob_pred = [], [], []
+    for b in range(n_bins):
+        mask = bin_ids == b
+        if mask.sum() == 0:
+            continue
+        weights.append(mask.sum() / len(y_prob))
+        prob_true.append(y_arr[mask].mean())
+        prob_pred.append(y_prob[mask].mean())
+
+    weights    = np.array(weights)
+    prob_true  = np.array(prob_true)
+    prob_pred  = np.array(prob_pred)
+
+    ece = float(np.sum(weights * np.abs(prob_true - prob_pred)))
+
+    baseline_prob = float(y_arr.mean())
+    ece_baseline  = float(np.sum(weights * np.abs(prob_true - baseline_prob)))
+
+    print(f"ECE (Expected Calibration Error): {ece:.4f}")
+    print(f"ECE baseline (prevalencia fija):  {ece_baseline:.4f}")
+    print(f"Número de bins:                   {n_bins}")
+
+    return ece
+
+
 def plot_dca(model, X_test, y_test, model_name="Model", thresholds=None, save_path=None):
     """
     Decision Curve Analysis (DCA).
@@ -371,22 +421,19 @@ def plot_dca(model, X_test, y_test, model_name="Model", thresholds=None, save_pa
 
 def metrics_by_subgroup(model, X, y, groups, min_samples=50):
     """
-    Calcula métricas de clasificación por subgrupo.
-
-    Sirve para detectar si el modelo funciona peor en algún grupo concreto
-    (por edad, sexo, tipo de seguro, etc.).
+    Calcula métricas de equidad por subgrupo: ROC-AUC (discriminación) y
+    Brier Score vs. baseline (calibración).
 
     Parámetros
     ----------
     groups      : pd.Series — variable de agrupación (mismo índice que X e y)
     min_samples : int — grupos con menos registros se excluyen (default 50)
     """
-    from sklearn.metrics import roc_auc_score, recall_score, precision_score, f1_score
+    from sklearn.metrics import roc_auc_score, brier_score_loss
 
     y_prob = model.predict_proba(X)[:, 1]
-    y_pred = model.predict(X)
     y_arr  = np.asarray(y)
-    g_arr  = np.asarray(groups)
+    g_arr  = np.asarray(groups)  # grupos como array para poder indexar con mask
 
     rows = []
     for g in sorted(set(g_arr), key=str):
@@ -394,15 +441,15 @@ def metrics_by_subgroup(model, X, y, groups, min_samples=50):
         if mask.sum() < min_samples:
             continue
         if len(np.unique(y_arr[mask])) < 2:
-            continue  # no se puede calcular AUC con una sola clase presente
+            continue
+        prev = float(y_arr[mask].mean())
         rows.append({
-            "Subgrupo":    str(g),
-            "N":           int(mask.sum()),
-            "Prevalencia": round(float(y_arr[mask].mean()), 3),
-            "ROC-AUC":     round(roc_auc_score(y_arr[mask], y_prob[mask]), 3),
-            "Recall":      round(recall_score(y_arr[mask], y_pred[mask], zero_division=0), 3),
-            "Precision":   round(precision_score(y_arr[mask], y_pred[mask], zero_division=0), 3),
-            "F1-score":    round(f1_score(y_arr[mask], y_pred[mask], zero_division=0), 3),
+            "Subgrupo":       str(g),
+            "N":              int(mask.sum()),
+            "Prevalencia":    round(prev, 3),
+            "ROC-AUC":        round(roc_auc_score(y_arr[mask], y_prob[mask]), 3),
+            "Brier-Score":    round(brier_score_loss(y_arr[mask], y_prob[mask]), 3),
+            "Brier-Baseline": round(prev * (1 - prev), 3),
         })
 
     return pd.DataFrame(rows).sort_values("ROC-AUC", ascending=False).reset_index(drop=True)
@@ -436,6 +483,102 @@ def plot_subgroup_auc(df_metrics, group_label, save_path=None):
 
     plt.show()
     return ax
+
+
+def plot_subgroup_brier(df_metrics, group_label, save_path=None):
+    """
+    Gráfico de barras agrupadas: Brier Score del modelo vs. baseline por subgrupo.
+
+    El baseline es p*(1-p) (predecir siempre la prevalencia del subgrupo).
+    Si la barra del modelo supera al baseline, el modelo calibra peor que
+    no usar ningún modelo para ese grupo.
+    """
+    df = df_metrics.sort_values("Brier-Score").reset_index(drop=True)
+    x = np.arange(len(df))
+    width = 0.35
+
+    fig, ax = plt.subplots(figsize=(8, max(3, len(df) * 0.5 + 1)))
+    ax.barh(x - width / 2, df["Brier-Score"],    width, label="Modelo",    color="#1f77b4")
+    ax.barh(x + width / 2, df["Brier-Baseline"], width, label="Baseline",  color="#aec7e8")
+
+    ax.set_yticks(x)
+    ax.set_yticklabels(df["Subgrupo"].astype(str))
+    ax.set_xlabel("Brier Score (menor = mejor)")
+    ax.set_title(f"Paridad de calibración (Brier Score) por {group_label}")
+    ax.legend(loc="lower right")
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
+    return ax
+
+
+def plot_shap_waterfall(model, X_sample, y_prob=None, idx_high=None, idx_low=None,
+                        model_name="Model", max_display=12,
+                        save_path_high=None, save_path_low=None):
+    """
+    Waterfall plots SHAP para un paciente de alto riesgo y uno de bajo riesgo.
+
+    Complementa el beeswarm global mostrando cómo contribuye cada variable a
+    una predicción individual concreta. Útil en contexto clínico para justificar
+    una alerta ante el equipo médico.
+
+    Parámetros
+    ----------
+    X_sample      : pd.DataFrame — subconjunto de datos (mismo usado en beeswarm)
+    y_prob        : array — probabilidades predichas sobre X_sample (opcional;
+                    si None se calculan internamente)
+    idx_high/low  : int — índices explícitos del paciente alto/bajo riesgo
+                    (si None se usan argmax/argmin de y_prob)
+    max_display   : int — número máximo de variables a mostrar por gráfico
+    save_path_*   : str — rutas donde guardar las figuras (opcional)
+
+    Devuelve
+    --------
+    dict con keys 'idx_high', 'idx_low', 'prob_high', 'prob_low'
+    """
+    import shap
+
+    if y_prob is None:
+        y_prob = model.predict_proba(X_sample)[:, 1]
+
+    if idx_high is None:
+        idx_high = int(y_prob.argmax())
+    if idx_low is None:
+        idx_low = int(y_prob.argmin())
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer(X_sample)
+
+    if shap_values.values.ndim == 3:
+        sv = shap_values[:, :, 1]
+    else:
+        sv = shap_values
+
+    for idx, label, save_path in [
+        (idx_high, "alto riesgo", save_path_high),
+        (idx_low,  "bajo riesgo", save_path_low),
+    ]:
+        plt.figure()
+        shap.plots.waterfall(sv[idx], max_display=max_display, show=False)
+        plt.title(
+            f"{model_name} — Paciente de {label}  "
+            f"(P(reingreso) = {y_prob[idx]:.2f})",
+            fontsize=10
+        )
+        plt.tight_layout()
+        if save_path:
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
+        plt.show()
+
+    return {
+        "idx_high":  idx_high,
+        "idx_low":   idx_low,
+        "prob_high": round(float(y_prob[idx_high]), 3),
+        "prob_low":  round(float(y_prob[idx_low]),  3),
+    }
 
 
 def threshold_analysis(model, X_test, y_test, thresholds=None, optimize_for="F1-score"):

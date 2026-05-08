@@ -4,7 +4,7 @@ import joblib
 import pandas as pd
 import numpy as np
 
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score, RandomizedSearchCV, GroupShuffleSplit
+from sklearn.model_selection import train_test_split, StratifiedKFold, StratifiedGroupKFold, cross_val_score, RandomizedSearchCV, GroupShuffleSplit
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
@@ -169,8 +169,7 @@ def get_models(scale_pos_weight=1.0):
 
 def get_metrics(y_true, y_pred, y_prob):
     """
-    Calcula las métric
-    as principales para clasificación binaria.
+    Calcula las métricas principales para clasificación binaria.
 
     ROC-AUC y Recall son las métricas clave en este contexto clínico:
     el primero resume cómo de bien separa el modelo reingresos de no reingresos,
@@ -235,7 +234,7 @@ def run_all_models(X_train, X_val, y_train, y_val):
     return results_df, trained_models
 
 
-def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
+def tune_model(model_name, X_train, y_train, n_iter=20, cv=3, groups=None):
     """
     Optimización de hiperparámetros del modelo seleccionado mediante
     RandomizedSearchCV sobre el conjunto de entrenamiento.
@@ -280,13 +279,17 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
     # durante la búsqueda (RandomizedSearchCV ya paraleliza por fold)
     base_model.set_params(n_jobs=1)
 
-    skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
+    if groups is not None:
+        cv_splitter = StratifiedGroupKFold(n_splits=cv)
+    else:
+        cv_splitter = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
+
     search = RandomizedSearchCV(
         base_model,
         param_distributions=param_distributions[model_name],
         n_iter=n_iter,
         scoring="roc_auc",
-        cv=skf,
+        cv=cv_splitter,
         random_state=RANDOM_STATE,
         n_jobs=-1,
         verbose=1,
@@ -294,7 +297,7 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
     )
 
     print(f"Optimizando hiperparámetros de {model_name} ({n_iter} iteraciones, CV={cv})...")
-    search.fit(X_train, y_train)
+    search.fit(X_train, y_train, groups=groups)
 
     print(f"\nMejores hiperparámetros: {search.best_params_}")
     print(f"ROC-AUC medio (CV interna): {search.best_score_:.4f}")
@@ -309,17 +312,27 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3):
     }
 
 
-def cross_validate_model(model, X, y, cv=5):
+def cross_validate_model(model, X, y, cv=5, groups=None):
     """
     Validación cruzada estratificada (5 folds) sobre los datos de entrenamiento.
 
     Proporciona una estimación más robusta del rendimiento que una
     única partición. Debe llamarse siempre con X_train/y_train,
     nunca con el dataset completo.
+
+    Si se proporcionan groups (subject_id), usa StratifiedGroupKFold para
+    evitar que el mismo paciente aparezca en train y test del fold.
     """
 
-    skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
-    scores = cross_val_score(model, X, y, cv=skf, scoring="roc_auc", n_jobs=1)
+    if groups is not None:
+        cv_splitter = StratifiedGroupKFold(n_splits=cv)
+        scores = cross_val_score(
+            model, X, y, cv=cv_splitter, scoring="roc_auc",
+            n_jobs=1, groups=groups
+        )
+    else:
+        skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
+        scores = cross_val_score(model, X, y, cv=skf, scoring="roc_auc", n_jobs=1)
 
     return {
         "cv_roc_auc_mean": scores.mean().round(4),

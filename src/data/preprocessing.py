@@ -50,10 +50,10 @@ def clean_patients(df):
     - Conversión de columnas numéricas al tipo adecuado
     """
 
-    # Copia del dataframe
+    # Copia del dataframe para no modificar el original
     df = df.copy()
 
-    # Eliminamos duplicados si existieran
+    # quitamos duplicados
     df = df.drop_duplicates()
 
     # Convertimos anchor_year a valor numérico
@@ -293,6 +293,7 @@ def run_preprocessing_part2(df):
     # Re-parse de admittime necesario si df procede de la lectura del CSV interim
     # (donde las fechas se guardan como string).
     df["admittime"] = pd.to_datetime(df["admittime"], errors="coerce")
+    # calculo de la edad aproximada (no es exacta pero sirve)
     df["age_at_admission"] = df["anchor_age"] + (
         df["admittime"].dt.year - df["anchor_year"]
     )
