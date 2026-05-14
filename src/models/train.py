@@ -119,8 +119,9 @@ def get_models(scale_pos_weight=1.0):
     """
     Devuelve los cuatro modelos a comparar con sus configuraciones base.
 
-    Todos usan class_weight='balanced' (o scale_pos_weight en XGBoost)
-    para compensar el desbalanceo 65/35 y mejorar el recall sobre reingresos.
+    Logistic Regression y Random Forest usan class_weight='balanced' (sklearn).
+    XGBoost y LightGBM usan scale_pos_weight (parámetro nativo) calculado sobre
+    y_train como N_neg/N_pos, siguiendo la recomendación de la documentación oficial.
     """
 
     models = {
@@ -156,7 +157,7 @@ def get_models(scale_pos_weight=1.0):
             n_estimators=200,
             learning_rate=0.1,
             max_depth=6,
-            class_weight="balanced",
+            scale_pos_weight=scale_pos_weight,
             importance_type="gain",
             random_state=RANDOM_STATE,
             verbose=-1,

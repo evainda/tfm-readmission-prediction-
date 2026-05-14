@@ -96,8 +96,9 @@ def run_pipeline(skip_preprocessing=False, tune_model_name="LightGBM", n_iter=20
     print("ETAPA 2 — Carga y división de datos")
     print("=" * 60)
 
-    X, y = load_data()
-    X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y)
+    X, y, groups = load_data()
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y, groups)
+    groups_train = groups.loc[X_train.index] if groups is not None else None
 
     print(
         f"Train: {len(X_train):,} registros | "
@@ -126,7 +127,7 @@ def run_pipeline(skip_preprocessing=False, tune_model_name="LightGBM", n_iter=20
     print("=" * 60)
 
     best_model, best_params, cv_metrics = tune_model(
-        tune_model_name, X_train, y_train, n_iter=n_iter, cv=cv
+        tune_model_name, X_train, y_train, n_iter=n_iter, cv=cv, groups=groups_train
     )
 
     print(f"\nMejores parámetros encontrados: {best_params}")
@@ -142,7 +143,7 @@ def run_pipeline(skip_preprocessing=False, tune_model_name="LightGBM", n_iter=20
     print("ETAPA 5 — Validación cruzada del modelo tuneado (5 folds)")
     print("=" * 60)
 
-    cv_scores = cross_validate_model(best_model, X_train, y_train, cv=5)
+    cv_scores = cross_validate_model(best_model, X_train, y_train, cv=5, groups=groups_train)
     print(
         f"ROC-AUC (CV 5-fold): "
         f"{cv_scores['cv_roc_auc_mean']:.4f} ± {cv_scores['cv_roc_auc_std']:.4f}"

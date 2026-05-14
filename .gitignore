@@ -73,3 +73,10 @@ docs/*.docx
 # =========================
 # LOGS
 memory/*
+
+# =========================
+# PERSONAL / LOCAL
+# =========================
+
+generate_diagrams.py
+generate_metodologia_word.py
