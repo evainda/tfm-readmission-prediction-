@@ -62,15 +62,6 @@ Se usó `GroupShuffleSplit` agrupando por paciente (`subject_id`) para garantiza
 
 LightGBM ganó por poco en discriminación, pero la diferencia más relevante estaba en sensibilidad: Random Forest, aunque parecía competitivo en AUC, habría dejado escapar cuatro de cada cinco reingresos reales.
 
-### Resultado en test (modelo tuneado)
-
-- **ROC-AUC: 0.657**
-- Con umbral 0.40: recall 84%, precisión 40%
-- Brier Score: 0.229 → mejorado a 0.210 tras calibración isotónica
-- ECE antes de calibración: 0.139 → después: 0.006
-
-El modelo está dentro del rango habitual de la literatura (0.62–0.72) para modelos basados solo en datos administrativos.
-
 ### Más allá del AUC
 
 - **Calibración**: el modelo con pesos balanceados sobreestima el riesgo. Se aplicó postcalibración isotónica sobre validación, lo que corrige bien el problema.
