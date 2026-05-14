@@ -64,10 +64,7 @@ LightGBM ganó por poco en discriminación, pero la diferencia más relevante es
 
 ### Más allá del AUC
 
-- **Calibración**: el modelo con pesos balanceados sobreestima el riesgo. Se aplicó postcalibración isotónica sobre validación, lo que corrige bien el problema.
-- **SHAP**: las variables más influyentes son el número de ingresos previos, la duración del ingreso actual y la edad. Tiene sentido clínico y eso da cierta tranquilidad.
-- **DCA (Decision Curve Analysis)**: el modelo tiene utilidad clínica neta en el rango de umbrales más habitual para intervenciones preventivas.
-- **Análisis por subgrupos**: el rendimiento cae en mayores de 80 años (AUC 0.613) y en algunos grupos diagnósticos pequeños. Es importante saberlo antes de desplegarlo.
+Además de la discriminación, se evaluó la calibración del modelo, la importancia de variables con SHAP, la utilidad clínica mediante DCA y el rendimiento por subgrupos (edad, diagnóstico, género).
 
 ---
 
