@@ -32,7 +32,32 @@ models/             # Modelos entrenados (pkl)
 
 results/            # Todas las figuras generadas
 data/               # raw / interim / processed (los datos no se suben)
+prototipo/          # Aplicación web de demostración (Streamlit)
+  app.py
+  .streamlit/config.toml
 ```
+
+---
+
+## Prototipo de despliegue (POC)
+
+Como prueba de concepto, el repositorio incluye una aplicación web interactiva construida con Streamlit que simula cómo podría integrarse el modelo en un entorno clínico real.
+
+**Qué hace:**
+- Permite introducir manualmente los datos de un paciente al alta (edad, estancia, diagnósticos, tipo de ingreso, destino al alta, etc.)
+- Calcula la probabilidad de reingreso a 30 días usando el modelo calibrado
+- Clasifica el riesgo en tres niveles: **Bajo** (<25%), **Moderado** (25–40%) y **Alto** (>40%)
+- Muestra los factores individuales más relevantes mediante SHAP (TreeExplainer)
+- Genera recomendaciones clínicas adaptadas al nivel de riesgo
+
+**Cómo ejecutarlo:**
+
+```bash
+# Desde la raíz del repositorio
+streamlit run prototipo/app.py
+```
+
+Es una demostración funcional, no un producto clínico. No incluye integración con HIS, autenticación ni validación de entradas más allá de lo básico.
 
 ---
 
