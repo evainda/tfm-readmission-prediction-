@@ -266,7 +266,7 @@ def plot_factor_bars(shap_vals, X_patient, n=7):
                for f in top_idx]
     raw_vals = [X_patient[f].values[0] for f in top_idx]
 
-    colors = ["#dc3545" if v > 0 else "#4a90d9" for v in vals]
+    colors = ["#d64045" if v > 0 else "#1a7a8a" for v in vals]
 
     fig, ax = plt.subplots(figsize=(7.5, 0.58 * n + 0.9))
     fig.patch.set_facecolor("none")
@@ -300,19 +300,27 @@ def plot_factor_bars(shap_vals, X_patient, n=7):
 # ── bloque de recomendaciones ─────────────────────────────────────────────────
 def render_recommendations(tier):
     r = RECOMMENDATIONS[tier]
+    dot_color = r["border"]
     items_html = "".join(
-        f'<li style="margin:5px 0; font-size:14px;">{a}</li>'
+        f"""<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:{dot_color};
+                          margin-top:5px;flex-shrink:0;"></div>
+              <span style="font-size:13px;line-height:1.5;opacity:0.85;">{a}</span>
+            </div>"""
         for a in r["acciones"]
     )
     st.markdown(
         f"""
-        <div style="background:{r['bg']}; border-left: 5px solid {r['border']};
-                    border-radius:8px; padding:16px 20px; margin-top:4px;">
-          <div style="font-size:16px; font-weight:700; color:{r['border']}; margin-bottom:8px;
-                      text-transform:uppercase; letter-spacing:0.04em;">
-            {r['titulo']}
+        <div style="border:1px solid #D8D6D0; border-radius:3px;
+                    padding:18px 20px; margin-top:4px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:{dot_color};"></div>
+            <span style="font-size:13px;font-weight:600;letter-spacing:0.02em;">
+
+              {r['titulo']}
+            </span>
           </div>
-          <ul style="margin:0; padding-left:18px; color:#333333;">{items_html}</ul>
+          {items_html}
         </div>
         """,
         unsafe_allow_html=True,
@@ -323,41 +331,48 @@ def render_recommendations(tier):
 # CONFIGURACIÓN DE PÁGINA
 # ══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Riesgo de Reingreso · 30 días",
-    page_icon=None,
+    page_title="ReAdmit · Predicción de reingreso",
+    page_icon="🏥",
     layout="wide",
 )
 
-# CSS global
 st.markdown("""
 <style>
-/* Encabezado principal */
-.panel-header {
-    background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 100%);
-    color: white; padding: 18px 24px; border-radius: 10px;
-    margin-bottom: 6px;
-}
-.panel-header h1 { margin:0; font-size:22px; font-weight:700; }
-.panel-header p  { margin:4px 0 0 0; font-size:13px; opacity:0.85; }
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
 
-/* Tarjeta resumen del paciente */
-.patient-card {
-    background: #f8f9fa; border: 1px solid #dee2e6;
-    border-radius: 8px; padding: 14px 18px;
-}
-.patient-card h4 { margin: 0 0 8px 0; font-size: 14px; color: #555; font-weight:600; }
-.patient-card p  { margin: 3px 0; font-size: 13px; color: #333; }
+html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif !important; }
 
-/* Separador de sección en sidebar */
+/* Topbar */
+.topbar {
+    display: flex; align-items: baseline; gap: 16px;
+    padding: 0 0 16px 0; margin-bottom: 24px;
+    border-bottom: 2px solid #0F172A;
+}
+.topbar-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 20px; font-weight: 500; color: #0D9488;
+}
+.topbar-sub { font-size: 12px; opacity: 0.5; }
+
+/* Separadores sidebar */
 .sidebar-section {
-    font-size: 12px; font-weight: 700; text-transform: uppercase;
-    color: #888; letter-spacing: 0.06em; margin: 12px 0 4px 0;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; margin: 16px 0 4px 0;
+    opacity: 0.75;
 }
 
-/* Aviso modelo */
+/* Tarjeta paciente */
+.patient-card {
+    border: 1px solid #D8D6D0;
+    border-radius: 3px; padding: 14px 16px;
+    font-size: 13px;
+}
+
+/* Badge modelo */
 .model-badge {
-    font-size:11px; color:#777; background:#f1f3f5; border-radius:4px;
-    padding:4px 8px; display:inline-block; margin-top:4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; opacity: 0.8;
+    display: inline-block; margin-top: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -366,9 +381,9 @@ model, is_calibrated = load_model()
 
 # ── cabecera ──────────────────────────────────────────────────────────────────
 st.markdown("""
-<div class="panel-header">
-  <h1>Panel de Riesgo de Reingreso Hospitalario</h1>
-  <p>Apoyo a la decisión clínica en el momento del alta · Predicción a 30 días</p>
+<div class="topbar">
+  <span class="topbar-name">ReAdmit</span>
+  <span class="topbar-sub">predicción de reingreso a 30 días &nbsp;/&nbsp; apoyo a la decisión al alta</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -426,7 +441,7 @@ with st.sidebar:
                             type="primary", use_container_width=True)
 
     st.markdown(
-        '<div class="model-badge">LightGBM · ROC-AUC 0,657 · ECE 0,007 · MIMIC-IV</div>',
+        '<div class="model-badge">LightGBM · AUC 0,657 · ECE 0,007 · MIMIC-IV</div>',
         unsafe_allow_html=True,
     )
 
@@ -483,17 +498,29 @@ if predict_btn:
             "EU OBSERVATION": "Observación urgencias", "OBSERVATION ADMIT": "Observación",
         }
 
+        def field(label, val):
+            return f"""<div style="margin-bottom:10px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7;margin-bottom:2px;">{label}</div>
+              <div style="font-size:13px;font-weight:600;">{val}</div>
+            </div>"""
+
         st.markdown(
             f"""
             <div class="patient-card">
-              <h4>Perfil clínico al alta</h4>
-              <p><b>Edad:</b> {age} años &nbsp;·&nbsp; <b>Sexo:</b> {gender}</p>
-              <p><b>Estancia:</b> {los} día{"s" if los != 1 else ""} &nbsp;·&nbsp;
-                 <b>Diagnósticos:</b> {n_diag}</p>
-              <p><b>Ingresos previos:</b> {prev_adm} en los últimos 12 meses</p>
-              <p><b>Tipo de admisión:</b> {adm_labels.get(admission_type, admission_type)}</p>
-              <p><b>Destino al alta:</b> {discharge_labels.get(discharge_loc, discharge_loc)}</p>
-              <p><b>Cobertura:</b> {insurance}</p>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;
+                          color:#e05c3a;font-weight:600;margin-bottom:14px;
+                          font-family:'IBM Plex Mono',monospace;">
+                Ficha del episodio
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;">
+                {field("Edad / Sexo", f"{age} años · {gender}")}
+                {field("Estancia", f"{los} día{'s' if los != 1 else ''}")}
+                {field("Diagnósticos", n_diag)}
+                {field("Ingresos previos (12 m)", prev_adm)}
+                {field("Tipo de admisión", adm_labels.get(admission_type, admission_type))}
+                {field("Destino al alta", discharge_labels.get(discharge_loc, discharge_loc))}
+                {field("Cobertura", insurance)}
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -502,16 +529,18 @@ if predict_btn:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(
             f"""
-            <div style="border: 2px solid {tier_color}; border-radius: 10px;
-                        padding: 14px 20px; text-align: center; background: #fafafa;">
-              <div style="font-size: 13px; color: #555; margin-bottom: 4px;">
-                NIVEL DE RIESGO
+            <div style="background:{tier_color}; border-radius:8px; padding:18px 22px; margin-top:12px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px;
+                          color:rgba(255,255,255,0.7); letter-spacing:0.12em; text-transform:uppercase;
+                          margin-bottom:8px;">
+                Nivel de riesgo estimado
               </div>
-              <div style="font-size: 32px; font-weight: 800; color: {tier_color}; letter-spacing:0.05em;">
+              <div style="font-size:40px; font-weight:700; color:#fff;
+                          letter-spacing:-0.02em; line-height:1;">
                 {tier}
               </div>
-              <div style="font-size: 13px; color: #777; margin-top: 4px;">
-                Probabilidad estimada: <b style="color:{tier_color}">{prob:.1%}</b>
+              <div style="font-size:14px; color:rgba(255,255,255,0.85); margin-top:8px; font-weight:500;">
+                probabilidad estimada: {prob:.1%}
               </div>
             </div>
             """,
@@ -571,82 +600,47 @@ if predict_btn:
 
     st.markdown("---")
     st.caption(
-        "Prototipo académico — TFM UTAMED 2025–2026. "
+        "ReAdmit · Prototipo académico — TFM UTAMED 2025–2026. "
         "Modelo entrenado con datos de MIMIC-IV (Beth Israel Deaconess Medical Center, Boston, 2008–2019). "
-        "Requiere validación externa y recalibración local antes de cualquier uso clínico. "
-        "No sustituye el juicio clínico del profesional."
+        "Requiere validación externa y recalibración local antes de cualquier uso clínico real. "
+        "No sustituye el juicio clínico del profesional sanitario."
     )
 
 else:
     # ── pantalla de bienvenida ────────────────────────────────────────────────
-    c1, c2, c3 = st.columns([1, 1, 1])
-
-    with c1:
-        st.markdown("""
-        <div style="background:#e8f4fd; border-radius:10px; padding:20px 22px; height:180px;
-                    border-top: 4px solid #2d6a9f;">
-          <div style="font-weight:700; font-size:15px; margin-bottom:8px; color:#1a3a5c;
-                      text-transform:uppercase; letter-spacing:0.04em;">
-            Evaluación de riesgo
-          </div>
-          <div style="font-size:13px; color:#444; line-height:1.5;">
-            El modelo estima la probabilidad de que el paciente reingrese
-            en los <b>30 días siguientes al alta</b> a partir de datos
-            ya disponibles en el HIS.
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c2:
-        st.markdown("""
-        <div style="background:#f0fff4; border-radius:10px; padding:20px 22px; height:180px;
-                    border-top: 4px solid #28a745;">
-          <div style="font-weight:700; font-size:15px; margin-bottom:8px; color:#1a3a5c;
-                      text-transform:uppercase; letter-spacing:0.04em;">
-            Explicación individualizada
-          </div>
-          <div style="font-size:13px; color:#444; line-height:1.5;">
-            Cada predicción incluye los <b>factores concretos</b> de ese
-            paciente que más influyen en el resultado, ordenados
-            por importancia mediante análisis SHAP.
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c3:
-        st.markdown("""
-        <div style="background:#fff5f0; border-radius:10px; padding:20px 22px; height:180px;
-                    border-top: 4px solid #dc3545;">
-          <div style="font-weight:700; font-size:15px; margin-bottom:8px; color:#1a3a5c;
-                      text-transform:uppercase; letter-spacing:0.04em;">
-            Acción clínica orientada
-          </div>
-          <div style="font-size:13px; color:#444; line-height:1.5;">
-            El panel traduce la probabilidad en <b>recomendaciones concretas</b>
-            adaptadas al nivel de riesgo: BAJO, MODERADO o ALTO.
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.info(
-        "Introduce los datos del paciente en el panel lateral y pulsa "
-        "**Calcular riesgo de reingreso** para obtener el resultado."
-    )
-
-    st.markdown("---")
     st.markdown("""
-    #### Sobre el modelo
-    | Parámetro | Valor |
-    |---|---|
-    | Algoritmo | LightGBM optimizado + postcalibración isotónica |
-    | Datos de entrenamiento | MIMIC-IV — Beth Israel Deaconess Medical Center (2008–2019) |
-    | Muestra | 315.982 ingresos · 54 variables administrativas |
-    | ROC-AUC (test) | **0,657** (rango habitual para datos administrativos: 0,62–0,72) |
-    | ECE tras calibración | **0,007** (Brier Score: 0,210) |
-    | Predictores más relevantes | Ingresos previos · Días de estancia · Edad al ingreso |
+    <div style="max-width:680px; margin: 40px auto 0 auto;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#C44D34;
+                  letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px;">
+        Prueba de concepto · TFM UTAMED 2025–2026
+      </div>
+      <div style="font-size:28px; font-weight:600; line-height:1.25; margin-bottom:14px;">
+        Predicción de reingreso hospitalario<br>en los 30 días siguientes al alta
+      </div>
+      <div style="font-size:14px; opacity:0.85; line-height:1.7; margin-bottom:36px;">
+        Introduce los datos del paciente en el panel lateral y obtén la estimación
+        de riesgo, los factores que más han influido en esa predicción concreta
+        y las acciones clínicas recomendadas.
+      </div>
 
-    > Las variables con mayor impacto corresponden a información disponible en cualquier
-    > sistema de información hospitalario en el momento del alta, sin necesidad
-    > de registros clínicos adicionales.
-    """)
+      <div style="display:flex; gap:40px; margin-bottom:36px; border-top:1px solid #CBD5E1; padding-top:20px;">
+        <div>
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.09em; opacity:0.7; margin-bottom:4px;">Algoritmo</div>
+          <div style="font-size:14px; font-weight:600;">LightGBM + calibración isotónica</div>
+        </div>
+        <div>
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.09em; opacity:0.7; margin-bottom:4px;">ROC-AUC (test)</div>
+          <div style="font-size:14px; font-weight:600;">0,657 <span style="opacity:0.6; font-weight:400; font-size:12px;">· ref. 0,62–0,72</span></div>
+        </div>
+        <div>
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.09em; opacity:0.7; margin-bottom:4px;">Datos de entrenamiento</div>
+          <div style="font-size:14px; font-weight:600;">MIMIC-IV · 315.982 ingresos</div>
+        </div>
+      </div>
+
+      <div style="font-size:12px; opacity:0.65; border-top:1px solid #D8D6D0; padding-top:12px;">
+        Variables: datos administrativos del HIS al alta (estancia, diagnósticos, tipo de admisión,
+        destino al alta, cobertura, datos sociodemográficos). Sin registros clínicos adicionales.
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
