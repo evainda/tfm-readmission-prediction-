@@ -98,6 +98,8 @@ def run_pipeline(skip_preprocessing=False, tune_model_name="LightGBM", n_iter=20
 
     X, y, groups = load_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y, groups)
+    # X_train preserva el índice original (RangeIndex de load_csv), así que
+    # groups.loc[X_train.index] selecciona correctamente los subject_id del train.
     groups_train = groups.loc[X_train.index] if groups is not None else None
 
     print(

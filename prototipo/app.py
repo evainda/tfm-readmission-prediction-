@@ -31,6 +31,9 @@ class _CalibratedWrapper:
         cal = self.ir.predict(raw)
         return np.column_stack([1 - cal, cal])
 
+    def predict(self, X, threshold=0.5):
+        return (self.predict_proba(X)[:, 1] >= threshold).astype(int)
+
 sys.modules["__main__"]._CalibratedWrapper = _CalibratedWrapper
 
 # ── paths ──────────────────────────────────────────────────────────────────────
@@ -68,7 +71,7 @@ FEATURE_COLS = [
 
 # ── etiquetas clínicas legibles para el médico ────────────────────────────────
 CLINICAL_LABELS = {
-    "previous_admissions":                         "Ingresos previos (12 meses)",
+    "previous_admissions":                         "Ingresos previos (total histórico)",
     "length_of_stay":                              "Días de estancia",
     "age_at_admission":                            "Edad al ingreso",
     "n_diagnoses":                                 "Número de diagnósticos",
@@ -151,7 +154,7 @@ RECOMMENDATIONS = {
 def load_model():
     try:
         return joblib.load(CALIBRATED_PATH), True
-    except Exception:
+    except (FileNotFoundError, OSError):
         return joblib.load(OPTIMIZADO_PATH), False
 
 
@@ -315,10 +318,7 @@ def render_recommendations(tier):
                     padding:18px 20px; margin-top:4px;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
             <div style="width:10px;height:10px;border-radius:50%;background:{dot_color};"></div>
-            <span style="font-size:13px;font-weight:600;letter-spacing:0.02em;">
-
-              {r['titulo']}
-            </span>
+            <span style="font-size:13px;font-weight:600;letter-spacing:0.02em;">{r['titulo']}</span>
           </div>
           {items_html}
         </div>
@@ -399,8 +399,8 @@ with st.sidebar:
     gender   = st.radio("Sexo", ["Femenino", "Masculino"], horizontal=True)
     los      = st.number_input("Días de estancia", 0, 365, 5, step=1,
                                help="Número de días desde el ingreso hasta el alta")
-    prev_adm = st.number_input("Ingresos previos (últimos 12 meses)", 0, 50, 0, step=1,
-                               help="Ingresos hospitalarios en los 12 meses anteriores")
+    prev_adm = st.number_input("Ingresos previos (total histórico)", 0, 50, 0, step=1,
+                               help="Total de ingresos hospitalarios previos del paciente en MIMIC")
     n_diag   = st.number_input("Número de diagnósticos al alta", 1, 50, 5, step=1,
                                help="Total de diagnósticos registrados en este episodio")
 
@@ -441,7 +441,7 @@ with st.sidebar:
                             type="primary", use_container_width=True)
 
     st.markdown(
-        '<div class="model-badge">LightGBM · AUC 0,657 · ECE 0,007 · MIMIC-IV</div>',
+        '<div class="model-badge">LightGBM · AUC 0,658 · ECE 0,004 · MIMIC-IV</div>',
         unsafe_allow_html=True,
     )
 
@@ -449,8 +449,7 @@ with st.sidebar:
 # PANEL PRINCIPAL
 # ══════════════════════════════════════════════════════════════════════════════
 if predict_btn:
-    # Agrupamos race bajo la variable por defecto si no se modificó
-    race_val = locals().get("race", "WHITE")
+    race_val = race
 
     X_patient = build_features(
         age, los, prev_adm, n_diag, gender,
@@ -516,7 +515,7 @@ if predict_btn:
                 {field("Edad / Sexo", f"{age} años · {gender}")}
                 {field("Estancia", f"{los} día{'s' if los != 1 else ''}")}
                 {field("Diagnósticos", n_diag)}
-                {field("Ingresos previos (12 m)", prev_adm)}
+                {field("Ingresos previos", prev_adm)}
                 {field("Tipo de admisión", adm_labels.get(admission_type, admission_type))}
                 {field("Destino al alta", discharge_labels.get(discharge_loc, discharge_loc))}
                 {field("Cobertura", insurance)}
@@ -592,11 +591,10 @@ if predict_btn:
 
     # ── detalles técnicos (colapsado) ─────────────────────────────────────────
     with st.expander("Gráfico SHAP detallado (referencia técnica)"):
-        fig_wf, ax_wf = plt.subplots(figsize=(9, 4))
         shap.plots.waterfall(sv_obj[0], max_display=10, show=False)
         plt.tight_layout()
-        st.pyplot(plt.gcf())
-        plt.close()
+        st.pyplot(plt.gcf(), use_container_width=True)
+        plt.close("all")
 
     st.markdown("---")
     st.caption(

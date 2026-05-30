@@ -255,7 +255,7 @@ def tune_model(model_name, X_train, y_train, n_iter=20, cv=3, groups=None):
             "max_depth":          [4, 6, 8, -1],
             "num_leaves":         [31, 63, 127],
             "min_child_samples":  [20, 50, 100],
-            "subsample":          [0.7, 0.8, 1.0],
+            "subsample":          [0.7, 0.8, 0.9],
             "bagging_freq":       [1, 5, 10],
             "colsample_bytree":   [0.7, 0.8, 1.0],
         },

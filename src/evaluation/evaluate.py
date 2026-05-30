@@ -167,7 +167,8 @@ def plot_feature_importance(model, feature_names, model_name="Model", top_n=20, 
     fig, ax = plt.subplots(figsize=(8, top_n * 0.35 + 1))
     sns.barplot(data=importance_df, y="feature", x="importance", ax=ax)
     ax.set_title(f"Top {top_n} variables más importantes — {model_name}")
-    ax.set_xlabel("Importancia (gain)")
+    xlabel = "Coeficiente absoluto" if hasattr(model, "named_steps") else "Importancia (gain)"
+    ax.set_xlabel(xlabel)
     ax.set_ylabel("")
 
     plt.tight_layout()
@@ -264,6 +265,9 @@ def plot_shap_summary(model, X_sample, model_name="Model", max_display=20, save_
             "plot_shap_summary solo es compatible con modelos de árbol (RF, XGBoost, LightGBM). "
             "Para Logistic Regression usa shap.LinearExplainer."
         )
+
+    if hasattr(model, "base_model"):
+        model = model.base_model
 
     explainer = shap.TreeExplainer(model)
     shap_values = explainer(X_sample)
@@ -548,6 +552,9 @@ def plot_shap_waterfall(model, X_sample, y_prob=None, idx_high=None, idx_low=Non
         idx_high = int(y_prob.argmax())
     if idx_low is None:
         idx_low = int(y_prob.argmin())
+
+    if hasattr(model, "base_model"):
+        model = model.base_model
 
     explainer = shap.TreeExplainer(model)
     shap_values = explainer(X_sample)
