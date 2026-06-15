@@ -4,9 +4,8 @@
 
 ---
 
-¿Puede un hospital saber, en el momento del alta, qué pacientes van a volver a urgencias antes de que pasen 30 días? Esta fue la pregunta de partida. La respuesta corta es: sí, con matices importantes, y esos matices son gran parte de lo que hace interesante este trabajo.
 
-El proyecto parte de más de 315.000 ingresos reales del hospital Beth Israel Deaconess de Boston (datos MIMIC-IV), compara cuatro algoritmos de machine learning y evalúa el modelo final desde varios ángulos (no solo la métrica de turno) para entender cuándo funciona, cuándo falla y para quién falla más.
+El proyecto parte de ingresos reales del hospital Beth Israel Deaconess de Boston (datos MIMIC-IV), compara cuatro algoritmos de machine learning y evalúa el modelo final desde varios ángulos (no solo la métrica de turno) para entender cuándo funciona, cuándo falla y para quién falla más.
 
 ---
 
@@ -137,4 +136,4 @@ Johnson, A., Bulgarelli, L., Shen, L., et al. (2023). MIMIC-IV (version 2.2). Ph
 
 ---
 
-*Eva Inda · UTAMED · 2026*
+*Eva Álvarez Inda · UTAMED · 2026*
