@@ -136,4 +136,4 @@ Johnson, A., Bulgarelli, L., Shen, L., et al. (2023). MIMIC-IV (version 2.2). Ph
 
 ---
 
-*Eva Inda · UTAMED · 2026*
+*Eva Álvarez Inda · UTAMED · 2026*
