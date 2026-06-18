@@ -441,7 +441,7 @@ with st.sidebar:
                             type="primary", use_container_width=True)
 
     st.markdown(
-        '<div class="model-badge">LightGBM · AUC 0,658 · ECE 0,004 · MIMIC-IV</div>',
+        '<div class="model-badge">LightGBM · AUC 0,657 · ECE 0,007 · MIMIC-IV</div>',
         unsafe_allow_html=True,
     )
 
