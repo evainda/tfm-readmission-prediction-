@@ -17,3 +17,6 @@ joblib==1.5.3
 
 # Interpretabilidad
 shap==0.46.0
+
+# Prototipo
+streamlit>=1.35
