@@ -1,9 +1,0 @@
-streamlit>=1.35
-# las demás ya están en el requirements.txt raíz del proyecto
-pandas
-numpy
-joblib
-scikit-learn
-lightgbm
-shap
-matplotlib
