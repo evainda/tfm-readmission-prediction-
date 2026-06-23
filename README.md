@@ -1,11 +1,11 @@
 # Predicción de Reingresos Hospitalarios a 30 días
 
-**TFM · Máster en Inteligencia Artificial · UTAMED 2025/2026**
+**TFM Máster en IA  UTAMED 2025/2026**
 
 ---
 
 
-El proyecto parte de ingresos reales del hospital Beth Israel Deaconess de Boston (datos MIMIC-IV), compara cuatro algoritmos de machine learning y evalúa el modelo final desde varios ángulos (no solo la métrica de turno) para entender cuándo funciona, cuándo falla y para quién falla más.
+El trabajo parte de ingresos reales del hospital Beth Israel Deaconess de Boston (datos MIMIC-IV). Se comparan cuatro algoritmos de machine learning y se evalúa el ganador desde varios ángulos (no solo la métrica de turno) para entender cuándo funciona, cuándo falla y para quién falla más.
 
 ---
 
@@ -73,7 +73,7 @@ El dataset final tiene **315.982 ingresos**, 54 variables y una tasa de reingres
 
 ### División de datos
 
-Se usó `GroupShuffleSplit` agrupando por paciente (`subject_id`) para garantizar que ningún paciente aparece a la vez en entrenamiento y en test. Esto es más importante de lo que parece: con divisiones aleatorias estándar, el modelo aprende patrones del historial de un paciente que en producción no existirían. La partición final fue 60/20/20 (train/val/test).
+Para el split usé `GroupShuffleSplit` agrupando por paciente (`subject_id`), para garantizar que ningún paciente aparezca a la vez en train y test. Esto es más importante de lo que parece: con la división aleatoria estándar por admisión, el modelo puede aprender patrones del historial de un paciente concreto que en producción no existirían y las métricas salen infladas. La partición final fue 60/20/20 (train/val/test).
 
 ### Modelos comparados
 
@@ -88,7 +88,7 @@ LightGBM ganó por poco en discriminación, pero la diferencia más relevante es
 
 ### Más allá del AUC
 
-Además de la discriminación, se evaluó la calibración del modelo, la importancia de variables con SHAP, la utilidad clínica mediante DCA y el rendimiento por subgrupos (edad, diagnóstico, género).
+El AUC solo dice si el modelo ordena bien el riesgo, no si las probabilidades son creíbles ni si usarlo en clínica aporta algo. Por eso, además de la discriminación, miré la calibración (Brier, ECE y postcalibración isotónica), la importancia de variables con SHAP a nivel global y de paciente concreto, la utilidad clínica mediante DCA y el rendimiento por subgrupos (edad, sexo, tipo de seguro y diagnóstico principal).
 
 ---
 
@@ -100,16 +100,13 @@ Además de la discriminación, se evaluó la calibración del modelo, la importa
 pip install -r requirements.txt
 ```
 
-Las versiones principales: `pandas 3.0`, `scikit-learn 1.8`, `lightgbm 4.6`, `xgboost 3.2`, `shap 0.46`.
+Las versiones principales: `pandas 3.0`, `scikit-learn 1.8`, `lightgbm 4.6`, `xgboost 3.2`, `shap 0.46` y `streamlit >=1.35` (para el prototipo).
 
 ### Orden de ejecución
 
 Los notebooks están numerados y pensados para ejecutarse en orden. Cada uno guarda lo que necesita el siguiente (datos procesados, modelos, etc.).
 
-1. Coloca los archivos CSV de MIMIC-IV en `data/raw/`
-2. Ejecuta los notebooks del 01 al 05 en orden
-
-También puedes abrir los notebooks directamente en Colab:
+Por temas de ética y privacidad no estan subidos al repo, la única forma de abrirlo es a través de los enlances:
 
 | Notebook | Colab |
 |----------|-------|
@@ -123,10 +120,10 @@ También puedes abrir los notebooks directamente en Colab:
 
 ## Limitaciones conocidas
 
-- Solo datos administrativos: sin signos vitales, analíticas ni notas de enfermería. La mayoría de modelos que superan AUC 0.70 usan ese tipo de información.
-- Validación interna únicamente (un solo hospital). Antes de usarlo en otro contexto habría que validarlo allí.
-- La calibración del modelo base no es buena. El modelo calibrado (`lightgbm_calibrated.pkl`) es el que debería usarse si las probabilidades individuales importan.
-- Agrupación y codificación one-hot calculadas sobre el dataset completo (antes de la partición). Con 315k registros la diferencia es mínima, pero en producción debería hacerse solo sobre train.
+- Solo datos administrativos: sin signos vitales, analíticas ni notas de enfermería. La mayoría de modelos que superan AUC 0,70 usan ese tipo de información clínica, que aquí no estaba disponible.
+- Validación interna únicamente, con datos de un solo hospital. Antes de usarlo en otro contexto habría que validarlo allí (y muy probablemente recalibrarlo).
+- La calibración del modelo base no es buena. El modelo calibrado (`lightgbm_calibrated.pkl`) es el que conviene usar cuando las probabilidades individuales importan; es además el que carga por defecto el prototipo Streamlit.
+- La agrupación de categorías raras y el one-hot encoding se calculan sobre el dataset completo, antes de la partición. Con 315 k registros la diferencia es mínima, pero en un pipeline de producción debería ajustarse solo sobre train.
 
 ---
 
@@ -136,4 +133,4 @@ Johnson, A., Bulgarelli, L., Shen, L., et al. (2023). MIMIC-IV (version 2.2). Ph
 
 ---
 
-*Eva Álvarez Inda · UTAMED · 2026*
+*Eva Álvarez Inda UTAMED 2025/2026*
