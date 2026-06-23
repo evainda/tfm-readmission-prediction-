@@ -16,7 +16,6 @@ import joblib
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import streamlit as st
 import shap
 
@@ -275,7 +274,7 @@ def plot_factor_bars(shap_vals, X_patient, n=7):
     fig.patch.set_facecolor("none")
     ax.set_facecolor("none")
 
-    bars = ax.barh(range(n), vals, color=colors, alpha=0.82, height=0.55, zorder=2)
+    ax.barh(range(n), vals, color=colors, alpha=0.82, height=0.55, zorder=2)
     ax.set_yticks(range(n))
     ax.set_yticklabels(labels, fontsize=10.5)
     ax.axvline(0, color="#444444", lw=1.1, zorder=3)
@@ -449,11 +448,9 @@ with st.sidebar:
 # PANEL PRINCIPAL
 # ══════════════════════════════════════════════════════════════════════════════
 if predict_btn:
-    race_val = race
-
     X_patient = build_features(
         age, los, prev_adm, n_diag, gender,
-        race_val, insurance, marital, language,
+        race, insurance, marital, language,
         admission_type, admission_loc, discharge_loc,
     )
 
@@ -628,7 +625,7 @@ else:
         </div>
         <div>
           <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.09em; opacity:0.7; margin-bottom:4px;">ROC-AUC (test)</div>
-          <div style="font-size:14px; font-weight:600;">0,657 <span style="opacity:0.6; font-weight:400; font-size:12px;">· ref. 0,62–0,72</span></div>
+          <div style="font-size:14px; font-weight:600;">0,657 <span style="opacity:0.6; font-weight:400; font-size:12px;">· ref. 0,63–0,72</span></div>
         </div>
         <div>
           <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.09em; opacity:0.7; margin-bottom:4px;">Datos de entrenamiento</div>
